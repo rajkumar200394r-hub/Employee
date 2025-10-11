@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS employee (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  emp_id NUMERIC(19,0) UNIQUE,
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100),
+  email VARCHAR(255) UNIQUE,
+  mobile NUMERIC(19,0) UNIQUE,
+  department VARCHAR(100),
+  salary DECIMAL(15,2)
+);
