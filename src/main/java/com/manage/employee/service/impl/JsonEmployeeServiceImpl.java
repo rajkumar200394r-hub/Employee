@@ -4,9 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -27,6 +31,7 @@ public class JsonEmployeeServiceImpl implements EmployeeService {
 
 	private final ObjectMapper mapper = new ObjectMapper();
 	private final Map<Long, EmployeeData> store = new ConcurrentHashMap<>();
+	private final Map<Long, EmployeeData> hashMapStore = new HashMap<>();
 	private final File file;
 
 	public JsonEmployeeServiceImpl(@Value("${app.json.file}") String path) {
@@ -34,7 +39,7 @@ public class JsonEmployeeServiceImpl implements EmployeeService {
 	}
 
 	@PostConstruct
-	private void init() {
+	private void init() throws InterruptedException {
 		try {
 			if (!file.exists()) {
 				file.getParentFile().mkdirs();
@@ -42,9 +47,15 @@ public class JsonEmployeeServiceImpl implements EmployeeService {
 			}
 			List<EmployeeData> list = mapper.readValue(file, new TypeReference<List<EmployeeData>>() {
 			});
+			ExecutorService executor = Executors.newFixedThreadPool(100);
+			executor.submit(()->{
 			for (EmployeeData e : list) {
 				store.put(e.getEmpId(), e);
-			}
+				hashMapStore.put(e.getEmpId(), e);
+			}});
+			
+			executor.shutdown();
+			executor.awaitTermination(10, TimeUnit.SECONDS);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to initialize JSON store: " + e.getMessage(), e);
 		}
@@ -127,6 +138,12 @@ public class JsonEmployeeServiceImpl implements EmployeeService {
 	public List<EmployeeData> getAll() {
 
 		return new ArrayList<>(store.values());
+
+	}
+	
+	public List<EmployeeData> getAllfromHashMap() {
+
+		return new ArrayList<>(hashMapStore.values());
 
 	}
 
